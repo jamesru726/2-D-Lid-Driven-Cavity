@@ -3,6 +3,7 @@ import math
 import ctypes
 import matplotlib.pyplot as plt
 import sys
+import time
 np.set_printoptions(linewidth=np.inf)
 np.set_printoptions(precision=3)
 
@@ -133,7 +134,6 @@ def SIMPLE():
     lib.GaussSeidel.argtypes = [
     ctypes.c_int,  # x
     ctypes.c_int,  # y
-    ctypes.POINTER(ctypes.c_double),  # res_u
     np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),  # AP_N
     np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),  # AP_W
     np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),  # AP_C
@@ -206,9 +206,6 @@ def SIMPLE():
     p_prime_old = np.zeros(shape = (x, y))
     vel_div = np.zeros(shape = (x, y)) # RHS of pressure correction equation
 
-    # Residual
-    res = ctypes.c_double(0.0)
-
     # SIMPLE loop
     for iter in range(iter_SIMPLE):
 
@@ -225,8 +222,8 @@ def SIMPLE():
         p_x, p_y = Build_Source(p_x, p_y, p)
   
         # Solve for center velocities
-        lib.GaussSeidel(x, y, res, A_N, A_W, A_C, A_E, A_S, u, u_old, p_x, lambda_vel, iter_GS_vel, tol_GS)
-        lib.GaussSeidel(x, y, res, A_N, A_W, A_C, A_E, A_S, v, v_old, p_y, lambda_vel, iter_GS_vel, tol_GS)
+        lib.GaussSeidel(x, y, A_N, A_W, A_C, A_E, A_S, u, u_old, p_x, lambda_vel, iter_GS_vel, tol_GS)
+        lib.GaussSeidel(x, y, A_N, A_W, A_C, A_E, A_S, v, v_old, p_y, lambda_vel, iter_GS_vel, tol_GS)
 
         # Calculate new face velocities
         u_face[:, 1:-1] = (u[1:-1, 1:-2] + u[1:-1, 2:-1]) * 0.5 # Shape is 32x33
@@ -242,7 +239,7 @@ def SIMPLE():
         vel_div = Build_vel_div(vel_div, u_face, v_face)
 
         # Solve for p_prime
-        lib.GaussSeidel(x, y, res, AP_N, AP_W, AP_C, AP_E, AP_S, p_prime, p_prime_old, vel_div, lambda_press, iter_GS_p, tol_GS)
+        lib.GaussSeidel(x, y, AP_N, AP_W, AP_C, AP_E, AP_S, p_prime, p_prime_old, vel_div, lambda_press, iter_GS_p, tol_GS)
 
         # Correct Pressure
         p_star = pressure_correction(p_star, p, p_prime, alpha)
@@ -269,7 +266,7 @@ def Plot(phi_u, phi_v):
     velocity_magnitude = np.sqrt(Zu**2 + Zv**2)
 
    # Plot the background velocity magnitude field
-    bg = plt.contourf(X, Y, velocity_magnitude, levels = 1000, cmap = 'jet')  # Smooth background
+    bg = plt.contourf(X, Y, velocity_magnitude, levels = 999, cmap = 'jet')  # Smooth background
     plt.colorbar(bg, label='Velocity Magnitude')  # Add colorbar
 
     # Overlay quiver arrows
@@ -297,7 +294,7 @@ def Plot1(phi, title, Bar):
     X, Y = np.meshgrid(x1, y1)
     z = phi[1:-1, 1:-1][::-1, :]
 
-    bg = plt.contourf(X, Y, z, levels = 1000, cmap = 'jet')  # Smooth background
+    bg = plt.contourf(X, Y, z, levels = 999, cmap = 'jet')  # Smooth background
     plt.colorbar(bg, label = f'{Bar}')  # Add colorbar
     plt.title(f'{title}')
     plt.xlabel(f'X')
@@ -321,7 +318,7 @@ lid = 'top'
 rho = 1 #1276 # kg/m^3
 U_lid = 1 # m/s
 L = 1 # m
-mu = 0.0001 # N*s/m^2
+mu = 0.001 # N*s/m^2
 
 # Relaxation values
 # Global
@@ -331,9 +328,9 @@ alpha = 0.2
 
 # Max iteration values
 # Global
-iter_GS_vel = 20
+iter_GS_vel = 25
 iter_GS_p = 60
-iter_SIMPLE = 500
+iter_SIMPLE = 100
 
 # Tolerance for GS
 # Global
@@ -355,7 +352,10 @@ AC_D = -(AN_D + AE_D + AS_D + AW_D)
 
 lib = ctypes.CDLL('./GS.dll')
 
+start = time.time()
 phi_u, phi_v, b = SIMPLE()
+end = time.time()
+print(f'Finished {iter_SIMPLE} iterations in {end - start} seconds')
 
 # Plotting all graphs of interest
 
@@ -374,8 +374,8 @@ Plot_general(v_center, np.size(v_center), xlabel = 'Distance', ylabel = 'x Veloc
 
 # Velocity magnitude, u and v velocities, and pressure gradient
 plt.figure(1)
-plt.subplot(2, 2, 1)
 Plot(phi_u, phi_v)
+plt.figure(2)
 plt.subplot(2, 2, 2)
 Plot1(phi_u, title = 'Velocity in the x-direction', Bar = 'Velocity (m/s)')
 plt.subplot(2, 2, 3)

@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <stdlib.h>  // For malloc
 
-void *GaussSeidel(int x, int y, double *residual, double *A_N, double *A_W, double *A_C, double *A_E, double *A_S, double *phi, double *phi_old, double *p_x, double lambda, int max_iters, double tol){
+void *GaussSeidel(int x, int y, double *A_N, double *A_W, double *A_C, double *A_E, double *A_S, double *phi, double *phi_old, double *p_x, double lambda, int max_iters, double tol){
 
     for(int iters = 0; iters < max_iters; iters++){
         double max_residual = 0.0;  // To track the max residual
@@ -20,19 +19,6 @@ void *GaussSeidel(int x, int y, double *residual, double *A_N, double *A_W, doub
                     + (1 - lambda) * phi_old[i * y + j]; 
             }
         }
-
-        // Calculate residual for each iteration
-        for(int i = 1; i < (y - 1); i++){
-            for(int j = 1; j < (x - 1); j++){
-                double diff = phi[i * y + j] - phi_old[i * y + j];
-                max_residual += diff * diff;  // Sum of squared differences
-            }
-        }
-
-        if (max_residual < tol){
-            *residual = sqrt(max_residual);
-            break;
-        }   
     }
 
 }
