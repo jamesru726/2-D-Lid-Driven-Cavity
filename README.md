@@ -5,7 +5,7 @@ There are two versions of the script: one version is pure python and the other v
 
 The scripts should have sufficient comments so that anyone familar with this problem can follow along.
 
-For the SIMPLE scheme, it uses the discretize momentum equations using the finite volume method (FVM) with upwind difference scheme for the convective term, central difference for the diffusion term, and linear interpolation for the pressure gradient term. for the linear equation solver, it uses Gauss Seidel. One thing to not is that there is no convergence check for the SIMPLE with, so choose your parameters carefully to make sure it doesn't run for too long. Both codes also include Rhie and Chow Correction to prevent checkerboard patterning.
+For the SIMPLE scheme, it uses the discretize momentum equations using the finite volume method (FVM) with upwind difference scheme for the convective term, central difference for the diffusion term, and linear interpolation for the pressure gradient term. for the linear equation solver, it uses Gauss Seidel. One thing to note is that there is no convergence check for SIMPLE with C, so choose your iterations carefully to make sure it doesn't run for too long. I usually find 25 for velocity and 60 for pressure to be good. For the SIMPLE iterations, that will depend on your Reynolds Number. Both codes also include Rhie and Chow Correction to prevent checkerboard patterning.
 
 The image below is a 100x100 grid with Re = 10,000 by making mu = 0.0001
 ![Example Image](example.png)
